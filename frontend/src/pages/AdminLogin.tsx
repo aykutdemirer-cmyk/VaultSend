@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, apiErrorMessage } from "../services/api";
 import { setAdminToken } from "../hooks/useAuth";
+import { useBrand } from "../hooks/useBrand";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,7 @@ export default function AdminLogin() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const brandName = useBrand();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +31,7 @@ export default function AdminLogin() {
     <div className="flex min-h-screen items-center justify-center bg-slate-900 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-10 shadow-xl">
         <h1 className="text-xl font-semibold text-slate-900">Admin Panel</h1>
-        <p className="mt-1 text-sm text-slate-500">VaultSend yönetim girişi</p>
+        <p className="mt-1 text-sm text-slate-500">{brandName} yönetim girişi</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <input

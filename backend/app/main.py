@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown(wait=False)
 
 
-app = FastAPI(title="VaultSend", lifespan=lifespan)
+app = FastAPI(title=settings.brand_name, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -73,3 +73,8 @@ app.include_router(admin.router)
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/api/config")
+async def public_config():
+    return {"brand_name": settings.brand_name}

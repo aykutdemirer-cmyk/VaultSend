@@ -37,7 +37,7 @@ class SessionOut(BaseModel):
 
 
 class UploadInitIn(BaseModel):
-    filename: str
+    filename: str = Field(min_length=1, max_length=500)
     file_size: int
     recipient_email: Email
     ttl_hours: int

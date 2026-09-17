@@ -41,6 +41,15 @@ chmod +x scripts/install.sh
 
 Admin panelde `ADMIN_CREDENTIALS.txt`'deki bilgilerle giriş yapın.
 
+### Admin Parolasını Unuttum
+
+`ADMIN_CREDENTIALS.txt` dosyasını sildiyseniz veya parolayı unuttuysanız, yeni bir rastgele parola üretip uygulamak için:
+
+- **Windows:** `parola-sifirla.bat` dosyasına çift tıklayın
+- **Linux:** `./scripts/reset-admin-password.sh`
+
+Bu script yeni parolayı ekrana yazar ve `ADMIN_CREDENTIALS.txt` dosyasını günceller — kullanıcı adı her zaman `admin` olarak kalır.
+
 ## 4. Mail (SMTP) Ayarlarını Girin
 
 Personelin OTP kodu alması ve alıcılara indirme linki gitmesi için SMTP ayarlarının girilmesi **zorunludur**:
@@ -50,7 +59,22 @@ Personelin OTP kodu alması ve alıcılara indirme linki gitmesi için SMTP ayar
 3. **"Test Mail Gönder"** ile bir test adresine mail göndererek ayarların doğru çalıştığını doğrulayın
 4. Sunucunuz kendi imzalı (self-signed) bir sertifika kullanıyorsa "Sertifika doğrulaması yap" seçeneğini kapatmanız gerekebilir
 
-## 5. Diğer Ayarlar (opsiyonel)
+## 5. Marka Adını Değiştirme (White-Label)
+
+Bu ürünü farklı bir şirket/marka adıyla teslim ediyorsanız, `.env` dosyasındaki `BRAND_NAME` değerini değiştirip backend'i yeniden başlatmanız yeterlidir — frontend'i yeniden derlemeniz gerekmez:
+
+```bash
+# .env içinde
+BRAND_NAME=MüşteriMarkası
+
+# uygulamak için (restart DEĞİL — up -d, çünkü .env değişikliğinin
+# container'a yansıması için yeniden oluşturulması gerekir)
+docker compose up -d backend
+```
+
+Bu değişiklik; sayfa başlığı, giriş ekranı logosu, admin panel başlığı ve tüm e-mail şablonlarındaki marka adını otomatik günceller.
+
+## 6. Diğer Ayarlar (opsiyonel)
 
 Admin Panel → Ayarlar altında şunları da değiştirebilirsiniz — kod değişikliği gerekmez:
 
@@ -63,7 +87,7 @@ Admin Panel → Ayarlar altında şunları da değiştirebilirsiniz — kod değ
 | Süresi Dolan Dosya Saklama Süresi | Süresi dolan dosyanın diskten ne zaman silineceği (saat) |
 | Yasaklı Dosya Uzantıları | Yüklenmesine izin verilmeyen dosya türleri |
 
-## 6. Güncelleme
+## 7. Güncelleme
 
 Yeni bir sürüm aldığınızda:
 
@@ -75,7 +99,7 @@ docker compose up -d --build
 
 `.env` dosyanız ve içindeki sırlar/ayarlarınız korunur, veritabanınız (`db_data` volume) etkilenmez.
 
-## 7. Yedekleme
+## 8. Yedekleme
 
 Düzenli olarak şu iki Docker volume'unu yedeklemeniz önerilir:
 
@@ -86,7 +110,7 @@ docker run --rm -v securetransfer_uploads_data:/data -v %cd%:/backup alpine tar 
 
 (Linux'ta `%cd%` yerine `$(pwd)` kullanın.)
 
-## 8. Üretim Ortamı İçin Ek Öneriler
+## 9. Üretim Ortamı İçin Ek Öneriler
 
 - **HTTPS:** Sunucunun önüne bir reverse proxy (Nginx/Caddy/Traefik) koyup gerçek bir SSL sertifikası (Let's Encrypt vb.) kurmanızı öneririz. Varsayılan kurulum düz HTTP'dir.
 - **Firewall:** Sadece personelin/alıcıların erişmesi gereken portu (varsayılan 5173) dışarı açın; `8000` portunu dış ağa kapatmanız önerilir.

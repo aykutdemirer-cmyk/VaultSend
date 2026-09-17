@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     app_base_url: str = "http://localhost:8000"
     frontend_base_url: str = "http://localhost:5173"
     environment: str = "development"
+    brand_name: str = "VaultSend"
 
     max_file_size_gb: float = 10
     default_link_ttl_hours: int = 24

@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, or_
@@ -14,10 +14,32 @@ from app.services import audit_service, settings_service, email_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
+LOGIN_LOCKOUT_WINDOW_MINUTES = 15
+LOGIN_MAX_FAILED_ATTEMPTS = 5
+
 
 @router.post("/login", response_model=AdminSessionOut)
 async def admin_login(payload: AdminLoginIn, request: Request, db: Session = Depends(get_db)):
     ip = request.client.host if request.client else None
+
+    if ip:
+        recent_failures = (
+            db.query(AuditLog)
+            .filter(
+                AuditLog.action == "ADMIN_LOGIN",
+                AuditLog.result == "FAILED",
+                AuditLog.ip_address == ip,
+                AuditLog.timestamp > datetime.now(timezone.utc) - timedelta(minutes=LOGIN_LOCKOUT_WINDOW_MINUTES),
+            )
+            .count()
+        )
+        if recent_failures >= LOGIN_MAX_FAILED_ATTEMPTS:
+            audit_service.log_action(db, payload.email.lower(), "ADMIN_LOGIN", "LOCKED_OUT", ip_address=ip)
+            raise HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS,
+                "Çok fazla başarısız giriş denemesi. Lütfen daha sonra tekrar deneyin.",
+            )
+
     admin = db.query(AdminUser).filter(AdminUser.email == payload.email.lower()).first()
     if admin is None or not verify_password(payload.password, admin.password_hash):
         audit_service.log_action(db, payload.email.lower(), "ADMIN_LOGIN", "FAILED", ip_address=ip)

@@ -6,10 +6,12 @@ import socket
 import aiosmtplib
 from email.message import EmailMessage
 
+from app.core.config import get_settings
 from app.core.database import SessionLocal
 from app.services import settings_service
 
 logger = logging.getLogger("securetransfer.email")
+settings = get_settings()
 
 
 def _load_smtp_config() -> dict:
@@ -47,14 +49,14 @@ async def _send(to_email: str, subject: str, html_body: str) -> None:
 async def send_otp_email(to_email: str, code: str, ttl_minutes: int) -> None:
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px">
-      <h2 style="color:#111827">VaultSend</h2>
+      <h2 style="color:#111827">{settings.brand_name}</h2>
       <p>Doğrulama Kodunuz:</p>
       <div style="font-size:32px;font-weight:700;letter-spacing:4px;color:#4f46e5">{code}</div>
       <p style="color:#6b7280;margin-top:16px">Bu kod {ttl_minutes} dakika geçerlidir.</p>
       <p style="color:#9ca3af;font-size:12px">Bu işlemi siz başlatmadıysanız bu e-maili dikkate almayınız.</p>
     </div>
     """
-    await _send(to_email, "VaultSend Doğrulama Kodunuz", html)
+    await _send(to_email, f"{settings.brand_name} Doğrulama Kodunuz", html)
 
 
 async def send_transfer_email(
@@ -77,7 +79,7 @@ async def send_transfer_email(
 
     body_html = f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px">
-      <h2 style="color:#111827">VaultSend</h2>
+      <h2 style="color:#111827">{settings.brand_name}</h2>
       <p>Size bir dosya gönderildi.</p>
       <p><strong>Gönderen:</strong> {safe_sender}</p>
       <p><strong>Dosya:</strong> {safe_filename}</p>
@@ -110,10 +112,10 @@ async def send_test_email(to_email: str) -> None:
     if not cfg["host"]:
         raise RuntimeError("SMTP is not configured")
 
-    html = """
+    html = f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px">
-      <h2 style="color:#111827">VaultSend</h2>
+      <h2 style="color:#111827">{settings.brand_name}</h2>
       <p>Bu bir test e-mailidir. SMTP ayarlarınız doğru şekilde çalışıyor.</p>
     </div>
     """
-    await _send(to_email, "VaultSend - Test E-maili", html)
+    await _send(to_email, f"{settings.brand_name} - Test E-maili", html)

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, apiErrorMessage } from "../services/api";
+import { useBrand } from "../hooks/useBrand";
 
 interface SettingsData {
   max_file_size_gb: number;
@@ -18,6 +19,7 @@ interface SettingsData {
 }
 
 export default function AdminSettings() {
+  const brandName = useBrand();
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [smtpPassword, setSmtpPassword] = useState("");
   const [saved, setSaved] = useState(false);
@@ -179,7 +181,7 @@ export default function AdminSettings() {
         <Field label="Gönderen Adresi (From)">
           <input
             type="text"
-            placeholder="VaultSend <no-reply@firma.com>"
+            placeholder={`${brandName} <no-reply@firma.com>`}
             value={settings.smtp_from}
             onChange={(e) => update("smtp_from", e.target.value)}
             className="w-full rounded-lg border border-slate-300 px-3 py-2"

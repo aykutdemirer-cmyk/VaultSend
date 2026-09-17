@@ -9,6 +9,13 @@ from app.services import audit_service
 
 settings = get_settings()
 
+# A single email is throttled by otp_resend_cooldown_seconds, but that alone doesn't
+# stop someone hammering this unauthenticated endpoint with a different address each
+# time — which would turn the company's own SMTP relay into a spam cannon. Cap total
+# requests per source IP too.
+IP_RATE_LIMIT_WINDOW_MINUTES = 10
+IP_RATE_LIMIT_MAX_REQUESTS = 10
+
 
 class OtpError(Exception):
     def __init__(self, code: str, message: str):
@@ -20,6 +27,17 @@ class OtpError(Exception):
 def request_otp(db: Session, email: str, ip_address: str | None) -> None:
     now = datetime.now(timezone.utc)
     cooldown_cutoff = now - timedelta(seconds=settings.otp_resend_cooldown_seconds)
+
+    if ip_address:
+        ip_window_cutoff = now - timedelta(minutes=IP_RATE_LIMIT_WINDOW_MINUTES)
+        ip_count = (
+            db.query(OtpCode)
+            .filter(OtpCode.ip_address == ip_address, OtpCode.created_at > ip_window_cutoff)
+            .count()
+        )
+        if ip_count >= IP_RATE_LIMIT_MAX_REQUESTS:
+            audit_service.log_action(db, email, "OTP_REQUEST", "IP_RATE_LIMITED", ip_address=ip_address)
+            raise OtpError("ip_rate_limited", "Bu adresten çok fazla istek yapıldı. Lütfen bir süre sonra tekrar deneyin.")
 
     recent = (
         db.query(OtpCode)

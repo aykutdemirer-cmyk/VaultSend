@@ -93,6 +93,16 @@ async def upload_chunk(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Transfer bu aşamada değil.")
 
     body = await request.body()
+
+    max_size_bytes = int(settings_service.get_setting(db, "max_file_size_gb") * 1024**3)
+    already_written = storage_service.chunk_dir_size(str(transfer.id))
+    if already_written + len(body) > max_size_bytes:
+        storage_service.abort_upload(str(transfer.id))
+        transfer.status = "FAILED"
+        db.commit()
+        audit_service.log_action(db, sender_email, "UPLOAD_REJECTED", "SIZE_LIMIT_EXCEEDED", resource=transfer.filename)
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Dosya boyutu limiti aşıldı.")
+
     storage_service.write_chunk(str(transfer.id), index, body)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -112,13 +122,23 @@ async def complete_upload(
     db.commit()
 
     try:
-        storage_service.assemble_chunks(str(transfer.id), payload.total_chunks, transfer.stored_filename)
+        final_path = storage_service.assemble_chunks(str(transfer.id), payload.total_chunks, transfer.stored_filename)
     except Exception:
         transfer.status = "FAILED"
         db.commit()
         audit_service.log_action(db, sender_email, "FILE_UPLOADED", "FAILED", resource=transfer.filename)
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Dosya birleştirilemedi.")
 
+    max_size_bytes = int(settings_service.get_setting(db, "max_file_size_gb") * 1024**3)
+    actual_size = os.path.getsize(final_path)
+    if actual_size > max_size_bytes:
+        storage_service.delete_file(transfer.stored_filename)
+        transfer.status = "FAILED"
+        db.commit()
+        audit_service.log_action(db, sender_email, "FILE_UPLOADED", "SIZE_LIMIT_EXCEEDED", resource=transfer.filename)
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Dosya boyutu limiti aşıldı.")
+
+    transfer.file_size = actual_size
     transfer.status = "READY"
     db.commit()
 

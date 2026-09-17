@@ -34,6 +34,17 @@ def chunk_exists(upload_id: str, index: int) -> bool:
     return os.path.exists(path)
 
 
+def chunk_dir_size(upload_id: str) -> int:
+    """Total bytes written so far for this upload — used to enforce the size
+    limit against actual received data, not the client's declared file_size."""
+    d = chunk_dir(upload_id)
+    return sum(
+        os.path.getsize(os.path.join(d, name))
+        for name in os.listdir(d)
+        if os.path.isfile(os.path.join(d, name))
+    )
+
+
 def assemble_chunks(upload_id: str, total_chunks: int, stored_filename: str) -> str:
     """Concatenates all chunks into the final storage file, returns full path."""
     _ensure_dirs()

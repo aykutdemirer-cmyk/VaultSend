@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { clearAdminToken, getAdminToken } from "../hooks/useAuth";
+import { useBrand } from "../hooks/useBrand";
 
 const NAV_ITEMS = [
   { to: "/admin/dashboard", label: "Dashboard" },
@@ -10,6 +11,7 @@ const NAV_ITEMS = [
 
 export default function AdminLayout() {
   const navigate = useNavigate();
+  const brandName = useBrand();
 
   if (!getAdminToken()) {
     return <Navigate to="/admin/login" replace />;
@@ -23,7 +25,7 @@ export default function AdminLayout() {
   return (
     <div className="flex min-h-screen bg-slate-50">
       <aside className="w-60 shrink-0 bg-slate-900 text-slate-200 flex flex-col">
-        <div className="px-6 py-5 text-lg font-semibold text-white">VaultSend</div>
+        <div className="px-6 py-5 text-lg font-semibold text-white">{brandName}</div>
         <nav className="flex-1 px-3 space-y-1">
           {NAV_ITEMS.map((item) => (
             <NavLink
